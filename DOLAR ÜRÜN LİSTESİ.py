@@ -1,24 +1,20 @@
 import streamlit as st
 import pandas as pd
-import gdown
 
-st.set_page_config(page_title="Ürün Sorgulama", layout="wide")
+# Başlık
+st.markdown("## 📊 Ürün Sorgulama Paneli")
 
-@st.cache_data
-def load_data():
-    url = "https://drive.google.com/uc?id=1BnZd9fGTb2yGnn8H1fzEi32df_jKJEZ9"
-    output = "yeni_excel.xlsx"
-    gdown.download(url, output, quiet=True)
+# Google Sheets'teki veriyi oku
+sheet_url = "https://docs.google.com/spreadsheets/d/1BnZd9fGTb2yGnn8H1fzEi32df_jKJEZ9/export?format=xlsx"
+df = pd.read_excel(sheet_url, sheet_name="ÖZET", header=0)
 
-    df = pd.read_excel(output, sheet_name="ÖZET", header=1)
-    df = df.dropna(how='all')
-    return df
+# Sütun isimlerini temizle
+df.columns = df.columns.str.strip()
 
-df = load_data()
+# Filtrelenecek sütunlar
+df_filtered = df.copy()
 
-st.title("📊 Ürün Sorgulama Paneli")
-
-# 🔎 Filtre Alanları
+# Arayüz - Sorgu seçenekleri
 col1, col2, col3 = st.columns(3)
 
 with col1:
@@ -26,24 +22,26 @@ with col1:
 with col2:
     yukseklik = st.text_input("📏 Yükseklik (E sütunu)")
 with col3:
-    dilim_sayisi = st.text_input("🔢 Dilim Sayısı (F sütunu)")
+    dilim_sayisi = st.text_input("🧩 Dilim Sayısı (F sütunu)")
 
-# 🔍 Filtreleme
-filtered_df = df.copy()
-
+# Sorguya göre filtrele
 if urun_adi:
-    filtered_df = filtered_df[filtered_df.iloc[:, 2].astype(str).str.contains(urun_adi, case=False, na=False)]
-
+    df_filtered = df_filtered[df_filtered.iloc[:, 2].astype(str).str.contains(urun_adi, case=False, na=False)]
 if yukseklik:
-    filtered_df = filtered_df[filtered_df.iloc[:, 4].astype(str).str.contains(yukseklik, case=False, na=False)]
-
+    df_filtered = df_filtered[df_filtered.iloc[:, 4].astype(str) == yukseklik]
 if dilim_sayisi:
-    filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).str.contains(dilim_sayisi, case=False, na=False)]
+    df_filtered = df_filtered[df_filtered.iloc[:, 5].astype(str) == dilim_sayisi]
 
-# 🔢 Tüm sayısal sütunları tek ondalık basamakla göster
-for col in filtered_df.columns:
-    if pd.api.types.is_numeric_dtype(filtered_df[col]):
-        filtered_df[col] = filtered_df[col].apply(lambda x: round(x, 1))
+# Gösterilecek sütunlar: 0–8 + 9–14 (sayısal olanlar)
+selected_columns = list(df.columns[:9]) + list(df.columns[9:15])
+df_filtered = df_filtered[selected_columns]
 
-# 📋 Tabloda göster
-st.dataframe(filtered_df, use_container_width=True)
+# Sayısal sütunları sadece 1 ondalık hane ile göster
+numeric_cols = df_filtered.select_dtypes(include='number').columns
+df_filtered[numeric_cols] = df_filtered[numeric_cols].applymap(lambda x: round(x, 1))
+
+# Sonuçları göster
+st.dataframe(
+    df_filtered.style.format({col: "{:.1f}" for col in numeric_cols}),
+    use_container_width=True
+)

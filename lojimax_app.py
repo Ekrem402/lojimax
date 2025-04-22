@@ -1,34 +1,30 @@
 import streamlit as st
 import pandas as pd
-import os
 import gdown
 
-# Sayfa başlığı ve yapılandırma
-st.set_page_config(page_title="LOJIMAX - ÖZET", layout="wide")
-st.title("📄 LOJIMAX - ÖZET (Google Drive Üzerinden Excel)")
+# Google Drive'dan dosyayı indir
+url = "https://drive.google.com/uc?id=1iU-Q96InL-DPi3OcrjbG8XnU_mcx_Tv_"
+output = "lojimax_maliyet.xlsx"
+gdown.download(url, output, quiet=False)
 
-# Google Drive dosya ID'si ve indirme yolu
-file_id = "1Ui-QD5lRrD2baojcrJBGXwh_mcx_Tv"
-output_file = "lojimax_ozet.xlsx"
-url = f"https://drive.google.com/uc?id={file_id}"
+# Excel dosyasını oku
+df = pd.read_excel(output)
 
-# Excel dosyasını indir ve yükle
-@st.cache_data
-def download_and_load_excel():
-    if not os.path.exists(output_file):
-        gdown.download(url, output_file, quiet=False)
-    df = pd.read_excel(output_file, sheet_name="ÖZET", engine="openpyxl")
-    return df
+# Başlık
+st.title("Lojimax Maliyet Tablosu")
 
-# Veri yükleme ve gösterme
-try:
-    df = download_and_load_excel()
+# İlk 5 satırı göster
+st.subheader("İlk 5 Satır")
+st.dataframe(df.head())
 
-    # 0-8 ve 17-21. sütunları birleştir
-    df_secili = pd.concat([df.iloc[:, :9], df.iloc[:, 17:22]], axis=1)
+# Tüm veriyi gösterme butonu
+if st.checkbox("Tüm veriyi göster"):
+    st.dataframe(df)
 
-    st.subheader("📌 ÖZET - Seçilen Sütunlar")
-    st.dataframe(df_secili, use_container_width=True)
+# Kolon bilgilerini göster
+st.subheader("Kolonlar")
+st.write(df.columns.tolist())
 
-except Exception as e:
-    st.error(f"❌ Veri okunamadı: {e}")
+# Eksik verileri göster
+st.subheader("Eksik Değerler")
+st.write(df.isnull().sum())

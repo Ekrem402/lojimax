@@ -1,28 +1,29 @@
 import streamlit as st
 import pandas as pd
-import os
 
-# Dosya yolu
-dosya_yolu = r"C:\Users\asus\Desktop\LOJIMAX_MALIYET_16022025-havlupan düzeltmesi.xlsx"
+st.set_page_config(page_title="LOJIMAX ÖZET", layout="wide")
 
-# Dosya kontrolü
-if not os.path.exists(dosya_yolu):
-    st.error("❌ Dosya bulunamadı.")
-    st.stop()
+st.title("📊 LOJIMAX - ÖZET (Google Sheets üzerinden)")
 
-# ÖZET sayfasını oku (önbellekle)
+# Google Sheets ID (Paylaştığın dosyadan alındı)
+sheet_id = "1iU-Q96InL-DPi3OcrjbG8XnU_mcx_Tv_"
+
+# CSV formatında veri çek
+sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
+
+# Google Sheets verisini oku (önbellekleme açık)
 @st.cache_data
-def oku_ozet():
-    return pd.read_excel(dosya_yolu, sheet_name="ÖZET")
+def oku_sheet():
+    return pd.read_csv(sheet_url)
 
 try:
-    df = oku_ozet()
+    df = oku_sheet()
 
     # İlk 9 sütun (0–8) ve 17–21 arası sütunları al
-    df_secili = pd.concat([df.iloc[:, :9], df.iloc[:, 18:22]], axis=1)
+    df_secili = pd.concat([df.iloc[:, :9], df.iloc[:, 17:22]], axis=1)
 
-    st.title("📌 LOJIMAX - ÖZET (Filtrelenmiş Sütunlar)")
-    st.dataframe(df_secili)
+    st.subheader("📄 ÖZET - Seçilen Sütunlar")
+    st.dataframe(df_secili, use_container_width=True)
 
-except ValueError:
-    st.error("❌ Excel dosyasında 'ÖZET' sayfası bulunamadı.")
+except Exception as e:
+    st.error(f"❌ Veri okunamadı: {e}")

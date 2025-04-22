@@ -8,19 +8,17 @@ st.title("📊 LOJIMAX - ÖZET (Google Drive üzerinden Excel)")
 
 # Google Drive dosya ID'si
 file_id = "1iU-Q96InL-DPi3OcrjbG8XnU_mcx_Tv_"
-
-# Google Drive doğrudan indirme linki
 url = f"https://drive.google.com/uc?id={file_id}"
 
 @st.cache_data
 def load_excel():
     response = requests.get(url)
-    return pd.read_excel(BytesIO(response.content), sheet_name="ÖZET")
+    return pd.read_excel(BytesIO(response.content), sheet_name="ÖZET", engine="openpyxl")
 
 try:
     df = load_excel()
 
-    # 0–8 ve 17–21 sütunlarını birleştir (10–16 arası gizlenmiş olacak)
+    # Sadece 0–8 ve 17–21. sütunlar (10–16 arası gizlenmiş olacak)
     df_secili = pd.concat([df.iloc[:, :9], df.iloc[:, 17:22]], axis=1)
 
     st.subheader("📄 ÖZET - Seçilen Sütunlar")

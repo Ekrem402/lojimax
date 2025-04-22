@@ -20,7 +20,7 @@ st.subheader("🔍 Sorgu Yapınız")
 with st.expander("Sorgu Yapmak İçin Tıklayın"):
     urun_adi = st.text_input("Ürün Adı (4. sütun)", "")
     yukseklik = st.text_input("Yükseklik (6. sütun, örn: 600)", "")
-    genislik = st.text_input("Genişlik (7. sütun, örn: 1000)", "")
+    dilim_sayisi = st.text_input("Dilim Sayısı (7. sütun, örn: 3)", "")
 
 # Filtrele
 filtered_df = df.copy()
@@ -31,14 +31,14 @@ if urun_adi:
 if yukseklik:
     filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str) == yukseklik]
 
-if genislik:
-    filtered_df = filtered_df[filtered_df.iloc[:, 6].astype(str) == genislik]
+if dilim_sayisi:
+    filtered_df = filtered_df[filtered_df.iloc[:, 6].astype(str) == dilim_sayisi]
 
 # Sadece gerekli sütunları al (4, 6, 7, 18–21)
 final_df = filtered_df.iloc[:, [3, 5, 6, 17, 18, 19, 20]].copy()
 
 # Sütun adlarını güncelle
-final_df.columns = ["Ürün Adı", "Yükseklik", "Genişlik", "Fiyat 1", "Fiyat 2", "Fiyat 3", "Fiyat 4"]
+final_df.columns = ["Ürün Adı", "Yükseklik", "Dilim Sayısı", "Fiyat 1", "Fiyat 2", "Fiyat 3", "Fiyat 4"]
 
 # Fiyat sütunlarını 2 ondalık basamakla göster
 for col in ["Fiyat 1", "Fiyat 2", "Fiyat 3", "Fiyat 4"]:

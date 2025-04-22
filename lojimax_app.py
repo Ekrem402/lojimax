@@ -3,26 +3,51 @@ import pandas as pd
 import streamlit as st
 
 # Başlık
-st.title("LOJIMAX - ÖZET (Veri Görselleştirme)")
+st.title("LOJIMAX - Ürün Sorgulama Paneli")
 
-# Google Drive dosya linki (sadece dosya ID kısmını aldık)
+# Google Drive'dan dosyayı indir
 url = "https://drive.google.com/uc?id=1iU-Q96InL-DPi3OcrjbG8XnU_mcx_Tv_"
 output = "lojimax_maliyet.xlsx"
-
-# Dosyayı indir (zaten varsa tekrar indirmez)
 gdown.download(url, output, quiet=False)
 
-# Excel dosyasının 'ÖZET' sayfasını oku, başlık 2. satırda (index 1)
+# Excel'den ÖZET sayfasını oku
 df = pd.read_excel(output, sheet_name="ÖZET", header=1)
+df = df.dropna(how='all')  # Tamamen boş satırları at
 
-# Sadece dolu olan satırları filtrele
-df = df.dropna(how='all')
+# Kullanıcı sorgusu
+st.subheader("🔍 Sorgu Yapınız")
 
-# İlk 9 sütun (0-8) ve 17–21 arası sütunları birleştir
-df_selected = pd.concat([df.iloc[:, 0:9], df.iloc[:, 17:22]], axis=1)
+with st.expander("Sorgu Yapmak İçin Tıklayın"):
+    urun_adi = st.text_input("Ürün Adı (4. sütun)", "")
+    yukseklik = st.text_input("Yükseklik (6. sütun, örn: 600)", "")
+    genislik = st.text_input("Genişlik (7. sütun, örn: 1000)", "")
 
-# Alt başlık
-st.subheader("📌 ÖZET Sayfası - Seçilen Sütunlar (Tüm Satırlar)")
+# Filtrele
+filtered_df = df.copy()
 
-# Tabloyu göster
-st.dataframe(df_selected)
+if urun_adi:
+    filtered_df = filtered_df[filtered_df.iloc[:, 3].astype(str).str.contains(urun_adi, case=False, na=False)]
+
+if yukseklik:
+    filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str) == yukseklik]
+
+if genislik:
+    filtered_df = filtered_df[filtered_df.iloc[:, 6].astype(str) == genislik]
+
+# Sadece gerekli sütunları al (4, 6, 7, 18–21)
+final_df = filtered_df.iloc[:, [3, 5, 6, 17, 18, 19, 20]].copy()
+
+# Sütun adlarını güncelle
+final_df.columns = ["Ürün Adı", "Yükseklik", "Genişlik", "Fiyat 1", "Fiyat 2", "Fiyat 3", "Fiyat 4"]
+
+# Fiyat sütunlarını 2 ondalık basamakla göster
+for col in ["Fiyat 1", "Fiyat 2", "Fiyat 3", "Fiyat 4"]:
+    final_df[col] = pd.to_numeric(final_df[col], errors="coerce").round(2)
+
+# Sonuçları göster
+st.subheader("📄 Sorgu Sonuçları")
+
+if not final_df.empty:
+    st.dataframe(final_df)
+else:
+    st.warning("❗ Sonuç bulunamadı. Lütfen filtre kriterlerini kontrol edin.")

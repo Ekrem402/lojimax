@@ -40,9 +40,10 @@ if yukseklik:
 if dilim_sayisi:
     filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str).str.contains(dilim_sayisi, case=False, na=False)]
 
-# 🔢 Sayısal sütunları 1 basamakla sınırla
-for col in filtered_df.select_dtypes(include=['float', 'int']).columns:
-    filtered_df[col] = filtered_df[col].map(lambda x: round(x, 1))
+# 🔢 Tüm sayısal sütunları tek ondalık basamakla göster
+for col in filtered_df.columns:
+    if pd.api.types.is_numeric_dtype(filtered_df[col]):
+        filtered_df[col] = filtered_df[col].apply(lambda x: round(x, 1))
 
 # 📋 Tabloda göster
 st.dataframe(filtered_df, use_container_width=True)

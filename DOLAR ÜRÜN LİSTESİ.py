@@ -1,50 +1,44 @@
 import streamlit as st
 import pandas as pd
+import requests
+from io import BytesIO
 
-# Başlık
 st.set_page_config(page_title="Ürün Sorgulama Paneli", layout="wide")
-st.title("📊 Ürün Sorgulama Paneli")
 
-# Google Sheets bağlantısı (CSV formatında dışa aktarım linki)
-sheet_url = "https://docs.google.com/spreadsheets/d/1BnZd9fGTb2yGnn8H1fzEi32df_jKJEZ9/export?format=csv&gid=0"
+st.markdown("## 📊 Ürün Sorgulama Paneli")
 
-# Veriyi oku
-df = pd.read_csv(sheet_url)
+# Google Sheet Excel dosyasını indirme
+xlsx_url = "https://docs.google.com/spreadsheets/d/1BnZd9fGTb2yGnn8H1fzEi32df_jKJEZ9/export?format=xlsx"
+response = requests.get(xlsx_url)
+df = pd.read_excel(BytesIO(response.content), engine='openpyxl')
 
-# Sütun isimlerini düzelt (bazı unnamed'ler olabilir)
-df.columns = df.columns.str.strip()
+# Sayısal sütunları tek ondalığa yuvarla (float tipindekiler)
+numeric_cols = df.select_dtypes(include=['float', 'int']).columns
+df[numeric_cols] = df[numeric_cols].applymap(lambda x: round(x, 1) if pd.notnull(x) else x)
 
-# Gerekli sütunları seç
-selected_columns = list(df.columns[:9]) + list(df.columns[17:22])
-df = df[selected_columns]
+# Filtreler
+col1, col2, col3 = st.columns(3)
 
-# Sayısal sütunları 1 ondalığa yuvarla
-numeric_cols = df.select_dtypes(include='number').columns
-df[numeric_cols] = df[numeric_cols].round(1)
+with col1:
+    urun_adlari = df.iloc[:, 2].dropna().unique()
+    selected_urun = st.selectbox("🔎 Ürün Adı (C sütunu)", [""] + list(urun_adlari))
 
-# Sorgu formu
-with st.form("sorgu_formu"):
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        urun_adi = st.text_input("🔍 Ürün Adı (C sütunu)")
-    with col2:
-        yukseklik = st.text_input("📏 Yükseklik (E sütunu)")
-    with col3:
-        dilim_sayisi = st.text_input("🍰 Dilim Sayısı (F sütunu)")
-    
-    sorgula = st.form_submit_button("✅ Sorgu Yap")
+with col2:
+    yukseklikler = df.iloc[:, 4].dropna().unique()
+    selected_yukseklik = st.selectbox("📐 Yükseklik (E sütunu)", [""] + list(map(str, sorted(yukseklikler))))
 
-# Sorgulama
-if sorgula:
-    # Filtreleme
-    df_filtered = df.copy()
-    if urun_adi:
-        df_filtered = df_filtered[df_filtered.iloc[:, 2].astype(str).str.contains(urun_adi, case=False, na=False)]
-    if yukseklik:
-        df_filtered = df_filtered[df_filtered.iloc[:, 4].astype(str) == yukseklik]
-    if dilim_sayisi:
-        df_filtered = df_filtered[df_filtered.iloc[:, 5].astype(str) == dilim_sayisi]
-    
-    # Sonuçları göster
-    st.subheader("🔎 Sorgu Sonuçları")
-    st.dataframe(df_filtered, use_container_width=True)
+with col3:
+    dilim_sayilari = df.iloc[:, 5].dropna().unique()
+    selected_dilim = st.selectbox("🌟 Dilim Sayısı (F sütunu)", [""] + list(map(str, sorted(dilim_sayilari))))
+
+# Filtreleme
+filtered_df = df.copy()
+if selected_urun:
+    filtered_df = filtered_df[filtered_df.iloc[:, 2] == selected_urun]
+if selected_yukseklik:
+    filtered_df = filtered_df[filtered_df.iloc[:, 4].astype(str) == selected_yukseklik]
+if selected_dilim:
+    filtered_df = filtered_df[filtered_df.iloc[:, 5].astype(str) == selected_dilim]
+
+# Sonuçları göster
+st.dataframe(filtered_df, use_container_width=True)

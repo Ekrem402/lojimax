@@ -1,25 +1,26 @@
 import streamlit as st
 import pandas as pd
+import requests
+from io import BytesIO
 
 st.set_page_config(page_title="LOJIMAX ÖZET", layout="wide")
+st.title("📊 LOJIMAX - ÖZET (Google Drive üzerinden Excel)")
 
-st.title("📊 LOJIMAX - ÖZET (Google Sheets üzerinden)")
+# Google Drive dosya ID'si
+file_id = "1iU-Q96InL-DPi3OcrjbG8XnU_mcx_Tv_"
 
-# Google Sheets ID (Paylaştığın dosyadan alındı)
-sheet_id = "1iU-Q96InL-DPi3OcrjbG8XnU_mcx_Tv_"
+# Google Drive doğrudan indirme linki
+url = f"https://drive.google.com/uc?id={file_id}"
 
-# CSV formatında veri çek
-sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv"
-
-# Google Sheets verisini oku (önbellekleme açık)
 @st.cache_data
-def oku_sheet():
-    return pd.read_csv(sheet_url)
+def load_excel():
+    response = requests.get(url)
+    return pd.read_excel(BytesIO(response.content), sheet_name="ÖZET")
 
 try:
-    df = oku_sheet()
+    df = load_excel()
 
-    # İlk 9 sütun (0–8) ve 17–21 arası sütunları al
+    # 0–8 ve 17–21 sütunlarını birleştir (10–16 arası gizlenmiş olacak)
     df_secili = pd.concat([df.iloc[:, :9], df.iloc[:, 17:22]], axis=1)
 
     st.subheader("📄 ÖZET - Seçilen Sütunlar")
